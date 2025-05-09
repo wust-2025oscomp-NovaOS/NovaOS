@@ -3,7 +3,7 @@ import sys
 import time
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-addr = ('localhost', 26099)
+addr = ('localhost', 7897)
 sock.bind(addr)
 
 
