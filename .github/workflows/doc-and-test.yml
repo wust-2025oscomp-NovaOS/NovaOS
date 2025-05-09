@@ -40,11 +40,12 @@ jobs:
           target: riscv64gc-unknown-none-elf
           # default: true 是 actions-rs/toolchain 的默认行为，会把这个工具链设置为 default
           # 这对于后续的 cargo build/run 是必须的
-      
-      # 移除 actions-rs/install Action，直接使用 cargo install
+
+      # 修正：移除 --version latest
       - name: Install cargo-binutils
-        # 使用 stable 工具链来编译安装 cargo-binutils，避免 nightly 兼容性问题
-        run: cargo +stable install cargo-binutils --version latest
+        # 使用 stable 工具链来编译安装 cargo-binutils
+        # 移除 --version latest，默认就会安装最新版本
+        run: cargo +stable install cargo-binutils
 
       - name: Cache QEMU
         id: cache-qemu # 添加 ID 方便后续检查是否缓存命中
@@ -56,7 +57,7 @@ jobs:
           #   qemu-7.0.0-x86_64-riscv64-
 
       - name: Install QEMU
-        # 只在缓存未命中时执行安装步骤
+        # 只在缓存未命中时执行下载和编译步骤
         if: steps.cache-qemu.outputs.cache-hit != 'true'
         run: |
           sudo apt-get update
@@ -73,8 +74,6 @@ jobs:
              echo "QEMU directory found, assuming cached build is complete."
              cd qemu-7.0.0 # 如果缓存命中，需要cd进去才能make install
           fi
-          # 无论是否从缓存恢复，都需要运行 make install 确保 binary 在 PATH 中
-          # 如果从缓存恢复，make install 应该非常快
           echo "Running make install..."
           sudo make install
           qemu-system-riscv64 --version
