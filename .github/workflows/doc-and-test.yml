@@ -30,19 +30,27 @@ jobs:
 
   run-tests:
     runs-on: ubuntu-latest
+    env:
+      CARGO_TERM_COLOR: always
+      rust_toolchain: nightly-2024-05-20  # 更新日期
     steps:
       - uses: actions/checkout@v3
+
+      - name: Install system dependencies
+        run: sudo apt-get install -y binutils
+
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
           toolchain: ${{ env.rust_toolchain }}
           components: rust-src, llvm-tools-preview
           target: riscv64gc-unknown-none-elf
+
       - uses: actions-rs/install@v0.1
         with:
           crate: cargo-binutils
-          version: latest
-          use-tool-cache: true
+          version: 0.3.6  # 固定版本
+          use-tool-cache: false
       - name: Cache QEMU
         uses: actions/cache@v3
         with:
