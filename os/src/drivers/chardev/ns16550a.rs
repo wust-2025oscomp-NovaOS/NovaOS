@@ -101,8 +101,9 @@ impl NS16550aRaw {
     pub fn read(&mut self) -> Option<u8> {
         let read_end = self.read_end();
         let lsr = read_end.lsr.read();
+        // 读到数据准备好
         if lsr.contains(LSR::DATA_AVAILABLE) {
-            Some(read_end.rbr.read())
+            Some(read_end.rbr.read()) // 读取内容
         } else {
             None
         }
@@ -111,6 +112,7 @@ impl NS16550aRaw {
     pub fn write(&mut self, ch: u8) {
         let write_end = self.write_end();
         loop {
+            //读 LSR（线路状态寄存器），检查发送 FIFO 是否空，为空说明发送完毕，可以写入数据
             if write_end.lsr.read().contains(LSR::THR_EMPTY) {
                 write_end.thr.write(ch);
                 break;
@@ -129,6 +131,8 @@ pub struct NS16550a<const BASE_ADDR: usize> {
     condvar: Condvar,
 }
 
+// Rust 泛型常量（const generics），表示 BASE_ADDR 是一个编译时确定的 usize
+// <BASE_ADDR> 说明它是 泛型实例化的，每个 BASE_ADDR 代表一个 不同的 UART 设备。
 impl<const BASE_ADDR: usize> NS16550a<BASE_ADDR> {
     pub fn new() -> Self {
         let inner = NS16550aInner {
@@ -147,7 +151,7 @@ impl<const BASE_ADDR: usize> NS16550a<BASE_ADDR> {
             .exclusive_session(|inner| inner.read_buffer.is_empty())
     }
 }
-
+/// 实现 CharDevice 接口
 impl<const BASE_ADDR: usize> CharDevice for NS16550a<BASE_ADDR> {
     fn init(&self) {
         let mut inner = self.inner.exclusive_access();
@@ -158,9 +162,11 @@ impl<const BASE_ADDR: usize> CharDevice for NS16550a<BASE_ADDR> {
     fn read(&self) -> u8 {
         loop {
             let mut inner = self.inner.exclusive_access();
+            // 如果存在数据，则返回数据
             if let Some(ch) = inner.read_buffer.pop_front() {
                 return ch;
             } else {
+                // 否则，阻塞当前任务，等待数据到来
                 let task_cx_ptr = self.condvar.wait_no_sched();
                 drop(inner);
                 schedule(task_cx_ptr);
@@ -175,11 +181,13 @@ impl<const BASE_ADDR: usize> CharDevice for NS16550a<BASE_ADDR> {
         let mut count = 0;
         self.inner.exclusive_session(|inner| {
             while let Some(ch) = inner.ns16550a.read() {
-                count += 1;
+                count += 1; // 计数
+                // 将读取到的数据数据放到缓冲区
                 inner.read_buffer.push_back(ch);
             }
         });
         if count > 0 {
+            // 唤醒等待数据的任务
             self.condvar.signal();
         }
     }

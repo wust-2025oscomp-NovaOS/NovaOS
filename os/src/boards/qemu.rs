@@ -8,6 +8,7 @@ pub const MMIO: &[(usize, usize)] = &[
     (0x10000000, 0x9000),  // VIRT_UART0 with GPU  in virt machine
 ];
 
+// 将virtio_blk封装为BlockDeviceImpl
 pub type BlockDeviceImpl = crate::drivers::block::VirtIOBlock;
 pub type CharDeviceImpl = crate::drivers::chardev::NS16550a<VIRT_UART>;
 
@@ -29,21 +30,25 @@ pub fn device_init() {
     let hart_id: usize = 0;
     let supervisor = IntrTargetPriority::Supervisor;
     let machine = IntrTargetPriority::Machine;
+    // 设置不同模式下的中断阈值
     plic.set_threshold(hart_id, supervisor, 0);
     plic.set_threshold(hart_id, machine, 1);
     //irq nums: 5 keyboard, 6 mouse, 8 block, 10 uart
     for intr_src_id in [5usize, 6, 8, 10] {
+        // 设置s模式下允许该中断
         plic.enable(hart_id, supervisor, intr_src_id);
-        plic.set_priority(intr_src_id, 1);
+        plic.set_priority(intr_src_id, 1); // 设置优先级
     }
     unsafe {
-        sie::set_sext();
+        sie::set_sext(); // s模式下允许外部中断
     }
 }
 
 pub fn irq_handler() {
     let mut plic = unsafe { PLIC::new(VIRT_PLIC) };
+    // cpu读取s模式下的已触发的优先级最高的中断号
     let intr_src_id = plic.claim(0, IntrTargetPriority::Supervisor);
+
     match intr_src_id {
         5 => KEYBOARD_DEVICE.handle_irq(),
         6 => MOUSE_DEVICE.handle_irq(),
@@ -51,5 +56,6 @@ pub fn irq_handler() {
         10 => UART.handle_irq(),
         _ => panic!("unsupported IRQ {}", intr_src_id),
     }
+    // 通知plic该中断处理完成
     plic.complete(0, IntrTargetPriority::Supervisor, intr_src_id);
 }
