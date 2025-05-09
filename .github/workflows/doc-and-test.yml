@@ -41,10 +41,8 @@ jobs:
           # default: true 是 actions-rs/toolchain 的默认行为，会把这个工具链设置为 default
           # 这对于后续的 cargo build/run 是必须的
 
-      # 修正：移除 --version latest
       - name: Install cargo-binutils
         # 使用 stable 工具链来编译安装 cargo-binutils
-        # 移除 --version latest，默认就会安装最新版本
         run: cargo +stable install cargo-binutils
 
       - name: Cache QEMU
@@ -61,8 +59,9 @@ jobs:
         if: steps.cache-qemu.outputs.cache-hit != 'true'
         run: |
           sudo apt-get update
-          sudo apt-get install ninja-build -y
-          # 检查 qemu 目录是否存在，避免缓存命中但目录不干净的情况（虽然缓存Action通常会清理）
+          # 添加 QEMU 编译所需的依赖库：ninja-build, libglib2.0-dev, libgthread2.0-dev
+          sudo apt-get install -y ninja-build libglib2.0-dev libgthread2.0-dev
+          # 检查 qemu 目录是否存在
           if [ ! -d qemu-7.0.0 ]; then
             echo "QEMU directory not found, downloading and building..."
             wget https://download.qemu.org/qemu-7.0.0.tar.xz
@@ -75,6 +74,7 @@ jobs:
              cd qemu-7.0.0 # 如果缓存命中，需要cd进去才能make install
           fi
           echo "Running make install..."
+          # 无论是否从缓存恢复，都需要运行 make install 确保 binary 在 PATH 中
           sudo make install
           qemu-system-riscv64 --version
 
@@ -82,4 +82,3 @@ jobs:
       - name: Run usertests
         run: cd os && make run TEST=1
         timeout-minutes: 10
-
