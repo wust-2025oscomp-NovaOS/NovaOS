@@ -4,13 +4,13 @@ on: [push]
 
 env:
   CARGO_TERM_COLOR: always
-  rust_toolchain: nightly-2024-01-18
+  rust_toolchain: nightly-2024-01-18 # 保持这个工具链用于构建你的 RISC-V 代码
 
 jobs:
   build-doc:
     runs-on: ubuntu-latest
-    permissions:  # 关键配置！
-      contents: write  # 允许写入仓库
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v3
       - uses: actions-rs/toolchain@v1
@@ -30,56 +30,55 @@ jobs:
 
   run-tests:
     runs-on: ubuntu-latest
-    env:
-      CARGO_TERM_COLOR: always
     steps:
       - uses: actions/checkout@v3
-
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            binutils \
-            libssl-dev \
-            zlib1g-dev \
-            pkg-config \
-            build-essential \
-            cmake
-
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
-          toolchain: nightly
-          override: true
+          toolchain: ${{ env.rust_toolchain }} # 设置主工具链为指定的 nightly + riscv target
           components: rust-src, llvm-tools-preview
           target: riscv64gc-unknown-none-elf
+          # default: true 是 actions-rs/toolchain 的默认行为，会把这个工具链设置为 default
+          # 这对于后续的 cargo build/run 是必须的
+      
+      # 移除 actions-rs/install Action，直接使用 cargo install
+      - name: Install cargo-binutils
+        # 使用 stable 工具链来编译安装 cargo-binutils，避免 nightly 兼容性问题
+        run: cargo +stable install cargo-binutils --version latest
 
-      - name: Install cargo-binutils (手动安装)
-        run: |
-          # 启用详细日志
-          export RUSTFLAGS="-C debuginfo=2"
-          cargo +nightly install cargo-binutils --version 0.3.6 -v
-          cargo objdump --version  # 验证安装
       - name: Cache QEMU
+        id: cache-qemu # 添加 ID 方便后续检查是否缓存命中
         uses: actions/cache@v3
         with:
           path: qemu-7.0.0
           key: qemu-7.0.0-x86_64-riscv64
+          # restore-keys: | # 可选：如果完全匹配的 key 找不到，尝试更通用的 key
+          #   qemu-7.0.0-x86_64-riscv64-
+
       - name: Install QEMU
+        # 只在缓存未命中时执行安装步骤
+        if: steps.cache-qemu.outputs.cache-hit != 'true'
         run: |
           sudo apt-get update
           sudo apt-get install ninja-build -y
+          # 检查 qemu 目录是否存在，避免缓存命中但目录不干净的情况（虽然缓存Action通常会清理）
           if [ ! -d qemu-7.0.0 ]; then
+            echo "QEMU directory not found, downloading and building..."
             wget https://download.qemu.org/qemu-7.0.0.tar.xz
             tar -xf qemu-7.0.0.tar.xz
             cd qemu-7.0.0
             ./configure --target-list=riscv64-softmmu
             make -j
           else
-            cd qemu-7.0.0
+             echo "QEMU directory found, assuming cached build is complete."
+             cd qemu-7.0.0 # 如果缓存命中，需要cd进去才能make install
           fi
+          # 无论是否从缓存恢复，都需要运行 make install 确保 binary 在 PATH 中
+          # 如果从缓存恢复，make install 应该非常快
+          echo "Running make install..."
           sudo make install
           qemu-system-riscv64 --version
+
 
       - name: Run usertests
         run: cd os && make run TEST=1
