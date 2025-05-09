@@ -14,6 +14,7 @@ lazy_static! {
 
 pub struct VirtioHal;
 
+// Hal是为了兼容不同的os的接口
 impl Hal for VirtioHal {
     fn dma_alloc(pages: usize) -> usize {
         let trakcers = frame_alloc_more(pages);
