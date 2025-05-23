@@ -1,36 +1,69 @@
 use clap::{App, Arg};
-use easy_fs::{BlockDevice, EasyFileSystem};
+//use easy_fs::{BlockDevice, EasyFileSystem};
+use ext4_rs::{BlockDevice, BLOCK_SIZE, Ext4, ROOT_INODE, InodeFileType};
 use std::fs::{read_dir, File, OpenOptions};
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::sync::Arc;
 use std::sync::Mutex;
 
-const BLOCK_SZ: usize = 512;
+// const BLOCK_SZ: usize = 512;
 
-struct BlockFile(Mutex<File>);
+#[derive(Debug)]
+pub struct Disk {}
 
-impl BlockDevice for BlockFile {
-    fn read_block(&self, block_id: usize, buf: &mut [u8]) {
-        let mut file = self.0.lock().unwrap();
-        file.seek(SeekFrom::Start((block_id * BLOCK_SZ) as u64))
-            .expect("Error when seeking!");
-        assert_eq!(file.read(buf).unwrap(), BLOCK_SZ, "Not a complete block!");
+impl BlockDevice for Disk {
+    fn read_offset(&self, offset: usize) -> Vec<u8> {
+        use std::fs::OpenOptions;
+        use std::io::{Read, Seek};
+        let mut file = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open("fs.img")
+            .unwrap();
+        let mut buf = vec![0u8; BLOCK_SIZE as usize];
+        let _r = file.seek(std::io::SeekFrom::Start(offset as u64));
+        let _r = file.read_exact(&mut buf);
+
+        buf
     }
 
-    fn write_block(&self, block_id: usize, buf: &[u8]) {
-        let mut file = self.0.lock().unwrap();
-        file.seek(SeekFrom::Start((block_id * BLOCK_SZ) as u64))
-            .expect("Error when seeking!");
-        assert_eq!(file.write(buf).unwrap(), BLOCK_SZ, "Not a complete block!");
-    }
+    fn write_offset(&self, offset: usize, data: &[u8]) {
+        use std::fs::OpenOptions;
+        use std::io::{Seek, Write};
+        let mut file = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open("fs.img")
+            .unwrap();
 
-    fn handle_irq(&self) {
-        unimplemented!();
+        let _r = file.seek(std::io::SeekFrom::Start(offset as u64));
+        let _r = file.write_all(&data);
     }
+    // fn read_offset(&self, offset: usize) -> Vec<u8> {
+    //     let mut file = self.0.lock().unwrap();
+    //     let mut buf = [0; BLOCK_SIZE];
+    //     file.seek(SeekFrom::Start(offset as u64))
+    //         .expect("Error when seeking!");
+    //     assert_eq!(file.read(&mut buf).unwrap(), BLOCK_SIZE, "Not a complete block!");
+    //     buf.to_vec()
+    // }
+        
+    
+
+    // fn write_offset(&self, offset: usize, data: &[u8]) {
+    //     let mut file = self.0.lock().unwrap();
+    //     file.seek(SeekFrom::Start(offset as u64))
+    //         .expect("Error when seeking!");
+    //     //assert_eq!(file.write(data).unwrap(), BLOCK_SIZE, "Not a complete block!");
+    // }
+        
+    
 }
 
 fn main() {
+    //println!("--------EasyFileSystem started!--------------");
     easy_fs_pack().expect("Error when packing easy-fs!");
+    //println!("--------EasyFileSystem packed!--------------");
 }
 
 fn easy_fs_pack() -> std::io::Result<()> {
@@ -53,18 +86,22 @@ fn easy_fs_pack() -> std::io::Result<()> {
     let src_path = matches.value_of("source").unwrap();
     let target_path = matches.value_of("target").unwrap();
     println!("src_path = {}\ntarget_path = {}", src_path, target_path);
-    let block_file = Arc::new(BlockFile(Mutex::new({
-        let f = OpenOptions::new()
-            .read(true)
-            .write(true)
-            .create(true)
-            .open(format!("{}{}", target_path, "fs.img"))?;
-        f.set_len(32 * 2048 * 512).unwrap();
-        f
-    })));
+    // let block_file = Arc::new(BlockFile(Mutex::new({
+    //     let f = OpenOptions::new()
+    //         .read(true)
+    //         .write(true)
+    //         .create(true)
+    //         .open(format!("{}{}", target_path, "fs.img"))?;
+    //     // f.set_len(32 * 2048 * 512).unwrap();
+    //     f
+    // })));
+
+
+    let disk = Arc::new(Disk {});
+    let ext4 = Ext4::open(disk);
     // 32MiB, at most 4095 files
-    let efs = EasyFileSystem::create(block_file, 32 * 2048, 1);
-    let root_inode = Arc::new(EasyFileSystem::root_inode(&efs));
+    //let ext4 = Ext4::open(block_file);
+    // let root_inode = Arc::new(Ext4::(&efs));
     let apps: Vec<_> = read_dir(src_path)
         .unwrap()
         .into_iter()
@@ -80,9 +117,11 @@ fn easy_fs_pack() -> std::io::Result<()> {
         let mut all_data: Vec<u8> = Vec::new();
         host_file.read_to_end(&mut all_data).unwrap();
         // create a file in easy-fs
-        let inode = root_inode.create(app.as_str()).unwrap();
+        //println!("开始创建文件");
+        let inode_ref = ext4.create(ROOT_INODE, &app, InodeFileType::S_IFREG.bits()).expect("文件创建失败");
         // write data to easy-fs
-        inode.write_at(0, all_data.as_slice());
+        //println!("开始写入数据");
+        ext4.write_at(inode_ref.inode_num, 0, all_data.as_slice()).expect("数据写入失败");
     }
     // list apps
     // for app in root_inode.ls() {

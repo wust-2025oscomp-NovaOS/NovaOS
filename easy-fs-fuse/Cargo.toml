@@ -8,7 +8,7 @@ edition = "2018"
 
 [dependencies]
 clap = "2.33.3"
-easy-fs = { path = "../easy-fs" }
+ext4_rs = { path = "../ext4_rs" }
 rand = "0.8.0"
 
 # [features]

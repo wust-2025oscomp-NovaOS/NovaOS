@@ -1,7 +1,8 @@
-use crate::fs::{make_pipe, open_file, OpenFlags};
+use crate::fs::{make_pipe, open_file, Dentry, OpenFlags};
 use crate::mm::{translated_byte_buffer, translated_refmut, translated_str, UserBuffer};
-use crate::task::{current_process, current_user_token};
+use crate::task::{current_process, current_user_token, current_work_dir};
 use alloc::sync::Arc;
+use ext4_rs::inode;
 
 pub fn sys_write(fd: usize, buf: *const u8, len: usize) -> isize {
     let token = current_user_token();
@@ -43,11 +44,11 @@ pub fn sys_read(fd: usize, buf: *const u8, len: usize) -> isize {
     }
 }
 
-pub fn sys_open(path: *const u8, flags: u32) -> isize {
+pub fn sys_open(path: *const u8, flags: i32) -> isize {
     let process = current_process();
     let token = current_user_token();
     let path = translated_str(token, path);
-    if let Some(inode) = open_file(path.as_str(), OpenFlags::from_bits(flags).unwrap()) {
+    if let Some(inode) = open_file(current_work_dir().get_inode(), &path, OpenFlags::from_bits(flags).unwrap()) {
         let mut inner = process.inner_exclusive_access();
         let fd = inner.alloc_fd();
         inner.fd_table[fd] = Some(inode);

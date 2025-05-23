@@ -5,6 +5,7 @@ use crate::sync::UPIntrFreeCell;
 use crate::trap::TrapContext;
 use alloc::sync::Arc;
 use lazy_static::*;
+use crate::fs::OSInode;
 
 pub struct Processor {
     current: Option<Arc<TaskControlBlock>>,
@@ -45,6 +46,7 @@ pub fn run_tasks() {
                 &task_inner.task_cx as *const TaskContext
             });
             processor.current = Some(task);
+            println!("[kernel] switching");
             // release processor manually
             drop(processor);
             unsafe {
@@ -66,6 +68,10 @@ pub fn current_task() -> Option<Arc<TaskControlBlock>> {
 
 pub fn current_process() -> Arc<ProcessControlBlock> {
     current_task().unwrap().process.upgrade().unwrap()
+}
+
+pub fn current_work_dir() -> Arc<OSInode> {
+    current_process().inner_exclusive_access().work_dir.clone()
 }
 
 pub fn current_user_token() -> usize {

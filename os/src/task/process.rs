@@ -3,7 +3,7 @@ use super::manager::insert_into_pid2process;
 use super::TaskControlBlock;
 use super::{add_task, SignalFlags};
 use super::{pid_alloc, PidHandle};
-use crate::fs::{File, Stdin, Stdout};
+use crate::fs::{File, Stdin, Stdout, OSInode, ROOT_INODE};
 use crate::mm::{translated_refmut, MemorySet, KERNEL_SPACE};
 use crate::sync::{Condvar, Mutex, Semaphore, UPIntrFreeCell, UPIntrRefMut};
 use crate::trap::{trap_handler, TrapContext};
@@ -11,6 +11,7 @@ use alloc::string::String;
 use alloc::sync::{Arc, Weak};
 use alloc::vec;
 use alloc::vec::Vec;
+// use easy_fs::Inode;
 
 pub struct ProcessControlBlock {
     // immutable
@@ -20,18 +21,32 @@ pub struct ProcessControlBlock {
 }
 
 pub struct ProcessControlBlockInner {
+    /// 进程状态
     pub is_zombie: bool,
+    /// 进程的虚拟地址空间
     pub memory_set: MemorySet,
+    /// 当前进程的父进程
     pub parent: Option<Weak<ProcessControlBlock>>,
+    /// 父进程的子进程列表
     pub children: Vec<Arc<ProcessControlBlock>>,
+    /// 进程退出时的退出码
     pub exit_code: i32,
+    /// 进程的文件描述符表
     pub fd_table: Vec<Option<Arc<dyn File + Send + Sync>>>,
+    /// 进程的信号
     pub signals: SignalFlags,
+    /// 进程的各个任务
     pub tasks: Vec<Option<Arc<TaskControlBlock>>>,
+    /// 用于分配进程的资源
     pub task_res_allocator: RecycleAllocator,
+    /// 互斥锁列表
     pub mutex_list: Vec<Option<Arc<dyn Mutex>>>,
+    /// 互斥锁列表
     pub semaphore_list: Vec<Option<Arc<Semaphore>>>,
+    /// 条件变量列表
     pub condvar_list: Vec<Option<Arc<Condvar>>>,
+    /// 当前进程的工作目录
+    pub work_dir: Arc<OSInode>,
 }
 
 impl ProcessControlBlockInner {
@@ -64,6 +79,10 @@ impl ProcessControlBlockInner {
     pub fn get_task(&self, tid: usize) -> Arc<TaskControlBlock> {
         self.tasks[tid].as_ref().unwrap().clone()
     }
+
+    pub fn get_work_dir(&self) -> Arc<OSInode> {
+        ROOT_INODE.clone()
+    }
 }
 
 impl ProcessControlBlock {
@@ -74,6 +93,7 @@ impl ProcessControlBlock {
     pub fn new(elf_data: &[u8]) -> Arc<Self> {
         // memory_set with elf program headers/trampoline/trap context/user stack
         let (memory_set, ustack_base, entry_point) = MemorySet::from_elf(elf_data);
+        println!("[kernel] New process {}, {}", ustack_base, entry_point);
         // allocate a pid
         let pid_handle = pid_alloc();
         let process = Arc::new(Self {
@@ -99,6 +119,7 @@ impl ProcessControlBlock {
                     mutex_list: Vec::new(),
                     semaphore_list: Vec::new(),
                     condvar_list: Vec::new(),
+                    work_dir: ROOT_INODE.clone(),
                 })
             },
         });
@@ -218,6 +239,7 @@ impl ProcessControlBlock {
                     mutex_list: Vec::new(),
                     semaphore_list: Vec::new(),
                     condvar_list: Vec::new(),
+                    work_dir: ROOT_INODE.clone()
                 })
             },
         });

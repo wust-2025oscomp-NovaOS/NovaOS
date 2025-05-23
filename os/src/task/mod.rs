@@ -9,7 +9,7 @@ mod switch;
 mod task;
 
 use self::id::TaskUserRes;
-use crate::fs::{open_file, OpenFlags};
+use crate::fs::{open_file, OpenFlags, ROOT_INODE};
 use crate::sbi::shutdown;
 use alloc::{sync::Arc, vec::Vec};
 use lazy_static::*;
@@ -22,7 +22,7 @@ pub use id::{kstack_alloc, pid_alloc, KernelStack, PidHandle, IDLE_PID};
 pub use manager::{add_task, pid2process, remove_from_pid2process, wakeup_task};
 pub use processor::{
     current_kstack_top, current_process, current_task, current_trap_cx, current_trap_cx_user_va,
-    current_user_token, run_tasks, schedule, take_current_task,
+    current_user_token, run_tasks, schedule, take_current_task, current_work_dir
 };
 pub use signal::SignalFlags;
 pub use task::{TaskControlBlock, TaskStatus};
@@ -140,11 +140,13 @@ pub fn exit_current_and_run_next(exit_code: i32) {
     let mut _unused = TaskContext::zero_init();
     schedule(&mut _unused as *mut _);
 }
-
+/// 初始进程
 lazy_static! {
     pub static ref INITPROC: Arc<ProcessControlBlock> = {
-        let inode = open_file("initproc", OpenFlags::RDONLY).unwrap();
+        let inode = open_file(ROOT_INODE.get_inode(), "initproc", OpenFlags::O_RDONLY).expect("open initproc failed");
+        println!("[kernel] initproc initing...");
         let v = inode.read_all();
+        println!("[kernel] initproc inited");
         ProcessControlBlock::new(v.as_slice())
     };
 }

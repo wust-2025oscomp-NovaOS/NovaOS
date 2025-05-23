@@ -57,20 +57,23 @@ pub fn rust_main() -> ! {
     clear_bss();
     mm::init();
     UART.init();
-    println!("KERN: init gpu");
+    println!("[kernel] init gpu");
     let _gpu = GPU_DEVICE.clone();
-    println!("KERN: init keyboard");
+    println!("[kernel] init keyboard");
     let _keyboard = KEYBOARD_DEVICE.clone();
-    println!("KERN: init mouse");
+    println!("[kernel] init mouse");
     let _mouse = MOUSE_DEVICE.clone();
-    println!("KERN: init trap");
+    println!("[kernel] init trap");
     trap::init();
     trap::enable_timer_interrupt();
     timer::set_next_trigger();
     board::device_init();
+    println!("[kernel] init trap");
+    fs::init();
     fs::list_apps();
     task::add_initproc();
     *DEV_NON_BLOCKING_ACCESS.exclusive_access() = true;
+    println!("[kernel] start run tasks");
     task::run_tasks();
     panic!("Unreachable in rust_main!");
 }
