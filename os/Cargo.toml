@@ -20,7 +20,7 @@ lose-net-stack = { git = "https://github.com/yfblock/lose-net-stack", rev = "db4
 ext4_rs = { path = "../ext4_rs" }
 embedded-graphics = "0.7.1"
 tinybmp = "0.3.1"
-log = "0.4"
+log = { version = "0.4", features = ["max_level_trace"] }
 sbi-rt = { version = "0.0.2", features = ["legacy"] }
 
 [profile.release]

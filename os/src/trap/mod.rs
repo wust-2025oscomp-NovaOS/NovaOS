@@ -121,15 +121,18 @@ pub fn trap_handler() -> ! {
 
 #[no_mangle]
 pub fn trap_return() -> ! {
+    //println!("[kernel] trap_return");
     disable_supervisor_interrupt();
     set_user_trap_entry();
     let trap_cx_user_va = current_trap_cx_user_va();
     let user_satp = current_user_token();
+    //println!("[kernel] va: {:#x}, satp: {:#x}", trap_cx_user_va, user_satp);
     extern "C" {
         fn __alltraps();
         fn __restore();
     }
     let restore_va = __restore as usize - __alltraps as usize + TRAMPOLINE;
+    //println!("[kernel] restore_va: {:#x}", restore_va);
     //println!("before return");
     unsafe {
         asm!(

@@ -147,6 +147,14 @@ QEMU_ARGS := -machine virt \
 # 标准运行目标（实际执行run-inner）
 run: run-inner
 
+fdt:
+	@qemu-system-riscv64 -M 128m -machine virt,dumpdtb=virt.out
+	fdtdump virt.out
+
+QEMU_NAME := qemu-system-riscv64
+qemu-version-check:
+	@sh scripts/qemu-ver-check.sh $(QEMU_NAME)
+
 # 带版本检查的QEMU运行
 run-inner: qemu-version-check build
 	@qemu-system-riscv64 $(QEMU_ARGS)

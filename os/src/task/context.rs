@@ -15,6 +15,12 @@ impl TaskContext {
             s: [0; 12],
         }
     }
+    pub fn debug(&self) {
+        println!("sp: {}, ra: {}", self.ra, self.sp);
+        for i in 0..12 {
+            println!("x[i]: {}", self.s[i]);
+        }
+    }
     pub fn goto_trap_return(kstack_ptr: usize) -> Self {
         Self {
             ra: trap_return as usize,

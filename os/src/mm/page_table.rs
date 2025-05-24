@@ -53,12 +53,16 @@ impl PageTableEntry {
 }
 
 pub struct PageTable {
+    /// 根目录页号
     root_ppn: PhysPageNum,
+    /// 物理页帧数组，RAII思想
     frames: Vec<FrameTracker>,
 }
 
 /// Assume that it won't oom when creating/mapping.
 impl PageTable {
+
+    /// 新建一个空页表，并分配一个物理页作为页表根目录页
     pub fn new() -> Self {
         let frame = frame_alloc().unwrap();
         PageTable {

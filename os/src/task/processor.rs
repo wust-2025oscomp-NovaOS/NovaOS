@@ -43,10 +43,11 @@ pub fn run_tasks() {
             // access coming task TCB exclusively
             let next_task_cx_ptr = task.inner.exclusive_session(|task_inner| {
                 task_inner.task_status = TaskStatus::Running;
+                //task_inner.task_cx.debug();
                 &task_inner.task_cx as *const TaskContext
             });
             processor.current = Some(task);
-            println!("[kernel] switching");
+            //println!("[kernel] switching");
             // release processor manually
             drop(processor);
             unsafe {

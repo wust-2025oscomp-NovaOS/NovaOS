@@ -2,7 +2,6 @@ use crate::fs::{make_pipe, open_file, Dentry, OpenFlags};
 use crate::mm::{translated_byte_buffer, translated_refmut, translated_str, UserBuffer};
 use crate::task::{current_process, current_user_token, current_work_dir};
 use alloc::sync::Arc;
-use ext4_rs::inode;
 
 pub fn sys_write(fd: usize, buf: *const u8, len: usize) -> isize {
     let token = current_user_token();

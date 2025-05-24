@@ -5,6 +5,7 @@ use alloc::vec::Vec;
 use core::fmt::{self, Debug, Formatter};
 use lazy_static::*;
 
+/// 物理页的封装，RAII思想
 pub struct FrameTracker {
     pub ppn: PhysPageNum,
 }
@@ -38,7 +39,7 @@ trait FrameAllocator {
     fn alloc_more(&mut self, pages: usize) -> Option<Vec<PhysPageNum>>;
     fn dealloc(&mut self, ppn: PhysPageNum);
 }
-
+/// 页帧分配器
 pub struct StackFrameAllocator {
     current: usize,
     end: usize,
@@ -47,6 +48,7 @@ pub struct StackFrameAllocator {
 
 impl StackFrameAllocator {
     pub fn init(&mut self, l: PhysPageNum, r: PhysPageNum) {
+        println!("[kernel] init frame_allocator from {:#x} to {:#x}", l.0, r.0);
         self.current = l.0;
         self.end = r.0;
         // println!("last {} Physical Frames.", self.end - self.current);
@@ -102,6 +104,8 @@ pub fn init_frame_allocator() {
     extern "C" {
         fn ekernel();
     }
+    println!("[kernel] ekernel = {:#x}", ekernel as usize);
+    // 初始化页帧分配器
     FRAME_ALLOCATOR.exclusive_access().init(
         PhysAddr::from(ekernel as usize).ceil(),
         PhysAddr::from(MEMORY_END).floor(),

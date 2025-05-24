@@ -146,7 +146,7 @@ lazy_static! {
         let inode = open_file(ROOT_INODE.get_inode(), "initproc", OpenFlags::O_RDONLY).expect("open initproc failed");
         println!("[kernel] initproc initing...");
         let v = inode.read_all();
-        println!("[kernel] initproc inited");
+        println!("[kernel] initproc inited {}", v.len());
         ProcessControlBlock::new(v.as_slice())
     };
 }

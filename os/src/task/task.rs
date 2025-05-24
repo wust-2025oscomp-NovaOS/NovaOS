@@ -53,7 +53,9 @@ impl TaskControlBlock {
         ustack_base: usize,
         alloc_user_res: bool,
     ) -> Self {
+        // 分配用户资源
         let res = TaskUserRes::new(Arc::clone(&process), ustack_base, alloc_user_res);
+        // 获得tarpcx的ppn
         let trap_cx_ppn = res.trap_cx_ppn();
         let kstack = kstack_alloc();
         let kstack_top = kstack.get_top();

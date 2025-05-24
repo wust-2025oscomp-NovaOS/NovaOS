@@ -19,56 +19,56 @@ pub struct VirtIOBlock {
 }
 
 impl VirtIOBlock {
-    // fn read_block(&self, block_id: usize, buf: &mut [u8]) {
-    //     let nb = *DEV_NON_BLOCKING_ACCESS.exclusive_access();
-    //     if nb {
-    //         let mut resp = BlkResp::default();
-    //         let task_cx_ptr = self.virtio_blk.exclusive_session(|blk| {
-    //             let token = unsafe { blk.read_block_nb(block_id, buf, &mut resp).unwrap() };
-    //             self.condvars.get(&token).unwrap().wait_no_sched()
-    //         });
-    //         schedule(task_cx_ptr);
-    //         assert_eq!(
-    //             resp.status(),
-    //             RespStatus::Ok,
-    //             "Error when reading VirtIOBlk"
-    //         );
-    //     } else {
-    //         self.virtio_blk
-    //             .exclusive_access()
-    //             .read_block(block_id, buf)
-    //             .expect("Error when reading VirtIOBlk");
-    //     }
-    // }
-    // fn write_block(&self, block_id: usize, buf: &[u8]) {
-    //     let nb = *DEV_NON_BLOCKING_ACCESS.exclusive_access();
-    //     if nb {
-    //         let mut resp = BlkResp::default();
-    //         let task_cx_ptr = self.virtio_blk.exclusive_session(|blk| {
-    //             let token = unsafe { blk.write_block_nb(block_id, buf, &mut resp).unwrap() };
-    //             self.condvars.get(&token).unwrap().wait_no_sched()
-    //         });
-    //         schedule(task_cx_ptr);
-    //         assert_eq!(
-    //             resp.status(),
-    //             RespStatus::Ok,
-    //             "Error when writing VirtIOBlk"
-    //         );
-    //     } else {
-    //         self.virtio_blk
-    //             .exclusive_access()
-    //             .write_block(block_id, buf)
-    //             .expect("Error when writing VirtIOBlk");
-    //     }
-    // }
+    fn read_block(&self, block_id: usize, buf: &mut [u8]) {
+        let nb = *DEV_NON_BLOCKING_ACCESS.exclusive_access();
+        if nb {
+            let mut resp = BlkResp::default();
+            let task_cx_ptr = self.virtio_blk.exclusive_session(|blk| {
+                let token = unsafe { blk.read_block_nb(block_id, buf, &mut resp).unwrap() };
+                self.condvars.get(&token).unwrap().wait_no_sched()
+            });
+            schedule(task_cx_ptr);
+            assert_eq!(
+                resp.status(),
+                RespStatus::Ok,
+                "Error when reading VirtIOBlk"
+            );
+        } else {
+            self.virtio_blk
+                .exclusive_access()
+                .read_block(block_id, buf)
+                .expect("Error when reading VirtIOBlk");
+        }
+    }
+    fn write_block(&self, block_id: usize, buf: &[u8]) {
+        let nb = *DEV_NON_BLOCKING_ACCESS.exclusive_access();
+        if nb {
+            let mut resp = BlkResp::default();
+            let task_cx_ptr = self.virtio_blk.exclusive_session(|blk| {
+                let token = unsafe { blk.write_block_nb(block_id, buf, &mut resp).unwrap() };
+                self.condvars.get(&token).unwrap().wait_no_sched()
+            });
+            schedule(task_cx_ptr);
+            assert_eq!(
+                resp.status(),
+                RespStatus::Ok,
+                "Error when writing VirtIOBlk"
+            );
+        } else {
+            self.virtio_blk
+                .exclusive_access()
+                .write_block(block_id, buf)
+                .expect("Error when writing VirtIOBlk");
+        }
+    }
 
-    // fn handle_irq(&self) {
-    //     self.virtio_blk.exclusive_session(|blk| {
-    //         while let Ok(token) = blk.pop_used() {
-    //             self.condvars.get(&token).unwrap().signal();
-    //         }
-    //     });
-    // }
+    fn handle_irq(&self) {
+        self.virtio_blk.exclusive_session(|blk| {
+            while let Ok(token) = blk.pop_used() {
+                self.condvars.get(&token).unwrap().signal();
+            }
+        });
+    }
 }
 
 impl BlockDevice for VirtIOBlock {
@@ -85,7 +85,8 @@ impl BlockDevice for VirtIOBlock {
         while total_read_bytes < BLOCK_SIZE {
             // 读取一块数据
             let mut buf = [0u8; BLK_SIZE];
-            self.virtio_blk.exclusive_access().read_block(start / BLK_SIZE, &mut buf).expect("读取失败");
+            //self.virtio_blk.exclusive_access().read_block(start / BLK_SIZE, &mut buf).expect("读取失败");
+            self.read_block(start / BLK_SIZE, &mut buf);
             // 计算当前扇区的偏移量
             let offset = start % BLK_SIZE; 
             // 读取长度为剩余数据的长度和扇区的剩余长度的最小值
@@ -116,10 +117,19 @@ impl BlockDevice for VirtIOBlock {
             buf[block_offset..block_offset + copy_size]
             .copy_from_slice(&data[total_write_bytes..total_write_bytes + copy_size]);
             //将拼接后的数据写入磁盘
-            self.virtio_blk.exclusive_access().write_block(block_id, &buf).expect("写回失败");
+            //self.virtio_blk.exclusive_access().write_block(block_id, &buf).expect("写回失败");
+            self.write_block(block_id, &buf);
             total_write_bytes += copy_size;
             start += copy_size;
         }
+    }
+
+    fn handle_irq(&self) {
+        self.virtio_blk.exclusive_session(|blk| {
+            while let Ok(token) = blk.pop_used() {
+                self.condvars.get(&token).unwrap().signal();
+            }
+        });
     }
 }
 

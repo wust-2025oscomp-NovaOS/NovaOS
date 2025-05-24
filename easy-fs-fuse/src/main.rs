@@ -39,6 +39,10 @@ impl BlockDevice for Disk {
         let _r = file.seek(std::io::SeekFrom::Start(offset as u64));
         let _r = file.write_all(&data);
     }
+
+    fn handle_irq(&self) {
+        println!("Disk IRQ!");
+    }
     // fn read_offset(&self, offset: usize) -> Vec<u8> {
     //     let mut file = self.0.lock().unwrap();
     //     let mut buf = [0; BLOCK_SIZE];

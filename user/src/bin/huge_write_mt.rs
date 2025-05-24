@@ -15,7 +15,7 @@ fn worker(size_kib: usize) {
         *ch = i as u8;
     }
     let filename = format(format_args!("testf{}\0", gettid()));
-    let f = open(filename.as_str(), OpenFlags::CREATE | OpenFlags::WRONLY);
+    let f = open(filename.as_str(), OpenFlags::O_CREAT | OpenFlags::O_WRONLY);
     if f < 0 {
         panic!("Open test file failed!");
     }

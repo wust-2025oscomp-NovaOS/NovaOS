@@ -39,6 +39,7 @@ pub struct MemorySet {
 }
 
 impl MemorySet {
+    /// 新建·一个空的地址空间
     pub fn new_bare() -> Self {
         Self {
             page_table: PageTable::new(),
@@ -83,6 +84,7 @@ impl MemorySet {
     }
     /// Mention that trampoline is not collected by areas.
     fn map_trampoline(&mut self) {
+        // 恒等映射
         self.page_table.map(
             VirtAddr::from(TRAMPOLINE).into(),
             PhysAddr::from(strampoline as usize).into(),
@@ -170,6 +172,7 @@ impl MemorySet {
     /// also returns user_sp_base and entry point.
     pub fn from_elf(elf_data: &[u8]) -> (Self, usize, usize) {
         let mut memory_set = Self::new_bare();
+        println!("[kernel] from_elf {:#x}", memory_set.token());
         // map trampoline
         memory_set.map_trampoline();
         // map program headers of elf, with U flag

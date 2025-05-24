@@ -47,6 +47,10 @@ fn syscall(id: usize, args: [usize; 3]) -> isize {
     ret
 }
 
+// pub fn sys_getcwd(buf: &mut [u8]) -> isize {
+//     syscall(SYSCALL_GETCWD, [buf.as_mut_ptr() as usize, buf.len(), 0])
+// }
+
 pub fn sys_dup(fd: usize) -> isize {
     syscall(SYSCALL_DUP, [fd, 0, 0])
 }
@@ -67,7 +71,7 @@ pub fn sys_accept(socket_fd: usize) -> isize {
     syscall(SYSCALL_ACCEPT, [socket_fd, 0, 0])
 }
 
-pub fn sys_open(path: &str, flags: u32) -> isize {
+pub fn sys_open(path: &str, flags: i32) -> isize {
     syscall(SYSCALL_OPEN, [path.as_ptr() as usize, flags as usize, 0])
 }
 

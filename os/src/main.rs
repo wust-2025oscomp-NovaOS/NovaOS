@@ -8,6 +8,9 @@ use crate::drivers::{GPU_DEVICE, KEYBOARD_DEVICE, MOUSE_DEVICE};
 extern crate alloc;
 
 #[macro_use]
+extern crate log;
+
+#[macro_use]
 extern crate bitflags;
 
 #[path = "boards/qemu.rs"]
@@ -15,6 +18,7 @@ mod board;
 
 #[macro_use]
 mod console;
+mod logging;
 mod config;
 mod drivers;
 mod fs;
@@ -44,6 +48,7 @@ fn clear_bss() {
     }
 }
 
+use logging::*;
 use lazy_static::*;
 use sync::UPIntrFreeCell;
 
@@ -52,11 +57,15 @@ lazy_static! {
         unsafe { UPIntrFreeCell::new(false) };
 }
 
+
 #[no_mangle]
 pub fn rust_main() -> ! {
+    
     clear_bss();
     mm::init();
     UART.init();
+    logging::init();
+    info!("--------logging init done----------");
     println!("[kernel] init gpu");
     let _gpu = GPU_DEVICE.clone();
     println!("[kernel] init keyboard");
