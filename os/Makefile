@@ -84,6 +84,7 @@ $(KERNEL_BIN): kernel
 fs-img: $(APPS)
 	@cd ../user && make build TEST=$(TEST)
 	@rm -f $(FS_IMG_TAR)
+	@cd ../ext4_rs && sh gen_img.sh
 	@cp $(FS_IMG_SRC) $(FS_IMG_BAK)
 	@cd ../easy-fs-fuse && cargo run --release -- -s ../user/src/bin/ -t ../user/target/riscv64gc-unknown-none-elf/release/
 	@cp $(FS_IMG_BAK) $(FS_IMG_TAR)
