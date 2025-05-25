@@ -118,7 +118,7 @@ fn easy_fs_pack() -> std::io::Result<()> {
     for app in apps {
         // load app data from host file system
         let mut host_file = File::open(format!("{}{}", target_path, app)).unwrap();
-        println!("开始加载文件 {}", app);
+        //println!("开始加载文件 {}", app);
         let mut all_data: Vec<u8> = Vec::new();
         host_file.read_to_end(&mut all_data).unwrap();
         // create a file in easy-fs

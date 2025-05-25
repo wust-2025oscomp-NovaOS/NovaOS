@@ -68,8 +68,10 @@ jobs:
             pkg-config \
             zlib1g-dev \
             libssl-dev \
+            libsdl2-2.0-0 \
             libsdl2-dev \
-            libgtk-3-dev
+            libgbm-dev \
+            libgtk-3-dev 
 
       - name: Build QEMU
         if: steps.cache-qemu.outputs.cache-hit != 'true'
