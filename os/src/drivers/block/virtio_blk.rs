@@ -8,6 +8,7 @@ use alloc::vec::Vec;
 use virtio_drivers::{BlkResp, RespStatus, VirtIOBlk, VirtIOHeader};
 use super::BLK_SIZE;
 use ext4_rs::BLOCK_SIZE;
+use core::sync::atomic::{AtomicU16, Ordering}; // no_std 环境
 
 #[allow(unused)]
 const VIRTIO0: usize = 0x10008000;
@@ -62,19 +63,19 @@ impl VirtIOBlock {
         }
     }
 
-    fn handle_irq(&self) {
-        self.virtio_blk.exclusive_session(|blk| {
-            while let Ok(token) = blk.pop_used() {
-                self.condvars.get(&token).unwrap().signal();
-            }
-        });
-    }
+    // fn handle_irq(&self) {
+    //     self.virtio_blk.exclusive_session(|blk| {
+    //         while let Ok(token) = blk.pop_used() {
+    //             self.condvars.get(&token).unwrap().signal();
+    //         }
+    //     });
+    // }
 }
 
 impl BlockDevice for VirtIOBlock {
     /// 读取offset开始的一整块数据
     fn read_offset(&self, offset: usize) -> Vec<u8> {
-        // debug!("read_offset: offset = {:#x}", offset);
+        //debug!("read_offset: offset = {:#x}", offset);
         // if offset % BLK_SIZE != 0 {
         //     panic!("VirtIOBlock::read_offset: offset must be aligned to BLK_SIZE");
         // } else {
@@ -94,8 +95,11 @@ impl BlockDevice for VirtIOBlock {
             data.extend_from_slice(&buf[offset..offset + len]);
             start += len;
             total_read_bytes += len;
+            if len == 0 {
+                break;
+            }
         }
-        //println!("read end-----");
+        //debug!("read end-----");
             // debug!("read_offset = {:#x}, buf = {:x?}", offset, buf);
         data
         //}
@@ -113,7 +117,8 @@ impl BlockDevice for VirtIOBlock {
             // 将数据的剩余长度和块的剩余长度进行比较，取最小值
             let copy_size = core::cmp::min(data.len() - total_write_bytes, BLK_SIZE - block_offset);
             // 先将该block数据读出来，和修改的部分进行拼接
-            self.virtio_blk.exclusive_access().read_block(block_id, &mut buf).expect("读取失败");
+            self.read_block(block_id, &mut buf);
+            //self.virtio_blk.exclusive_access().read_block(block_id, &mut buf).expect("读取失败");
             buf[block_offset..block_offset + copy_size]
             .copy_from_slice(&data[total_write_bytes..total_write_bytes + copy_size]);
             //将拼接后的数据写入磁盘
@@ -122,15 +127,43 @@ impl BlockDevice for VirtIOBlock {
             total_write_bytes += copy_size;
             start += copy_size;
         }
+        //debug!("write end-----");
     }
 
     fn handle_irq(&self) {
         self.virtio_blk.exclusive_session(|blk| {
-            while let Ok(token) = blk.pop_used() {
-                self.condvars.get(&token).unwrap().signal();
+            loop { // 循环直到队列为空
+                match blk.pop_used() {
+                    Ok(token) => {
+                        if let Some(condvar) = self.condvars.get(&token) {
+                            condvar.signal();
+                        }
+                        // 移除已处理的 token
+                        //self.condvars.remove(&token);
+                    },
+                    Err(_) => break, // 队列空时退出
+                }
             }
         });
     }
+
+    // fn handle_irq(&self) {
+    //     // //debug!("handle_irq");
+    //     // self.virtio_blk.exclusive_session(|blk| {
+    //     //     while let Ok(token) = blk.pop_used() {
+    //     //         self.condvars.get(&token).unwrap().signal();
+    //     //     }
+    //     // });
+
+    //     self.virtio_blk.exclusive_session(|blk| {
+    //         while let Ok(token) = blk.pop_used() {
+    //             if let Some(condvar) = self.condvars.get(&token) {
+    //                 condvar.signal(); // 必须正确触发信号
+    //             }
+    //         }
+    //     });
+    //     //debug!("handle_irq end-----");
+    // }
 }
 
 impl VirtIOBlock {

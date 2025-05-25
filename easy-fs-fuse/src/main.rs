@@ -118,6 +118,7 @@ fn easy_fs_pack() -> std::io::Result<()> {
     for app in apps {
         // load app data from host file system
         let mut host_file = File::open(format!("{}{}", target_path, app)).unwrap();
+        println!("开始加载文件 {}", app);
         let mut all_data: Vec<u8> = Vec::new();
         host_file.read_to_end(&mut all_data).unwrap();
         // create a file in easy-fs
@@ -127,6 +128,8 @@ fn easy_fs_pack() -> std::io::Result<()> {
         //println!("开始写入数据");
         ext4.write_at(inode_ref.inode_num, 0, all_data.as_slice()).expect("数据写入失败");
     }
+    //println!("开始创建文件");
+    //let inode_ref = ext4.create(ROOT_INODE, "filea", InodeFileType::S_IFREG.bits()).expect("文件创建失败");
     // list apps
     // for app in root_inode.ls() {
     //     println!("{}", app);
@@ -141,7 +144,7 @@ fn efs_test() -> std::io::Result<()> {
             .read(true)
             .write(true)
             .create(true)
-            .open("target/fs.img")?;
+            .open("fs.img")?;
         f.set_len(8192 * 512).unwrap();
         f
     })));
