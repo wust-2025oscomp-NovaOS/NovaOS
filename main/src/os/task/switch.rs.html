@@ -11,7 +11,7 @@
 
 <span class="macro">global_asm!</span>(<span class="macro">include_str!</span>(<span class="string">"switch.S"</span>));
 
-<span class="kw">extern </span><span class="string">"C" </span>{
-    <span class="kw">pub fn </span>__switch(current_task_cx_ptr: <span class="kw-2">*mut </span>TaskContext, next_task_cx_ptr: <span class="kw-2">*const </span>TaskContext);
+ <span class="kw">extern </span><span class="string">"C" </span>{
+    <span class="kw">pub  fn </span>__switch(current_task_cx_ptr: <span class="kw-2">*mut </span>TaskContext, next_task_cx_ptr: <span class="kw-2">*const </span>TaskContext);
 }
 </code></pre></div></section></main></body></html>

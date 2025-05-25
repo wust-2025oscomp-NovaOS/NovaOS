@@ -78,6 +78,9 @@
 <a href="#78" id="78">78</a>
 <a href="#79" id="79">79</a>
 <a href="#80" id="80">80</a>
+<a href="#81" id="81">81</a>
+<a href="#82" id="82">82</a>
+<a href="#83" id="83">83</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">super</span>::id::TaskUserRes;
 <span class="kw">use super</span>::{kstack_alloc, KernelStack, ProcessControlBlock, TaskContext};
 <span class="kw">use </span><span class="kw">crate</span>::trap::TrapContext;
@@ -87,7 +90,8 @@
 };
 <span class="kw">use </span>alloc::sync::{Arc, Weak};
 
-<span class="kw">pub struct </span>TaskControlBlock {
+<span class="doccomment">/// 任务控制块
+</span><span class="kw">pub struct </span>TaskControlBlock {
     <span class="comment">// immutable
     </span><span class="kw">pub </span>process: Weak&lt;ProcessControlBlock&gt;,
     <span class="kw">pub </span>kstack: KernelStack,
@@ -132,8 +136,10 @@
         ustack_base: usize,
         alloc_user_res: bool,
     ) -&gt; <span class="self">Self </span>{
-        <span class="kw">let </span>res = TaskUserRes::new(Arc::clone(<span class="kw-2">&amp;</span>process), ustack_base, alloc_user_res);
-        <span class="kw">let </span>trap_cx_ppn = res.trap_cx_ppn();
+        <span class="comment">// 分配用户资源
+        </span><span class="kw">let </span>res = TaskUserRes::new(Arc::clone(<span class="kw-2">&amp;</span>process), ustack_base, alloc_user_res);
+        <span class="comment">// 获得tarpcx的ppn
+        </span><span class="kw">let </span>trap_cx_ppn = res.trap_cx_ppn();
         <span class="kw">let </span>kstack = kstack_alloc();
         <span class="kw">let </span>kstack_top = kstack.get_top();
         <span class="self">Self </span>{

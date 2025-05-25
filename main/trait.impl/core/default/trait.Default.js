@@ -1,0 +1,3 @@
+(function() {var implementors = {
+"os":[["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/core/default/trait.Default.html\" title=\"trait core::default::Default\">Default</a> for <a class=\"struct\" href=\"os/fs/vfs/fs/struct.FileSystemManager.html\" title=\"struct os::fs::vfs::fs::FileSystemManager\">FileSystemManager</a>"]]
+};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

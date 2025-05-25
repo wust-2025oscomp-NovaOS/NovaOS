@@ -74,6 +74,18 @@
 <a href="#74" id="74">74</a>
 <a href="#75" id="75">75</a>
 <a href="#76" id="76">76</a>
+<a href="#77" id="77">77</a>
+<a href="#78" id="78">78</a>
+<a href="#79" id="79">79</a>
+<a href="#80" id="80">80</a>
+<a href="#81" id="81">81</a>
+<a href="#82" id="82">82</a>
+<a href="#83" id="83">83</a>
+<a href="#84" id="84">84</a>
+<a href="#85" id="85">85</a>
+<a href="#86" id="86">86</a>
+<a href="#87" id="87">87</a>
+<a href="#88" id="88">88</a>
 </pre></div><pre class="rust"><code><span class="attr">#![no_std]
 #![no_main]
 #![feature(panic_info_message)]
@@ -84,6 +96,9 @@
 <span class="kw">extern crate </span>alloc;
 
 <span class="attr">#[macro_use]
+</span><span class="kw">extern crate </span>log;
+
+<span class="attr">#[macro_use]
 </span><span class="kw">extern crate </span>bitflags;
 
 <span class="attr">#[path = <span class="string">"boards/qemu.rs"</span>]
@@ -91,6 +106,7 @@
 
 <span class="attr">#[macro_use]
 </span><span class="kw">mod </span>console;
+<span class="kw">mod </span>logging;
 <span class="kw">mod </span>config;
 <span class="kw">mod </span>drivers;
 <span class="kw">mod </span>fs;
@@ -120,6 +136,7 @@
     }
 }
 
+<span class="kw">use </span>logging::<span class="kw-2">*</span>;
 <span class="kw">use </span>lazy_static::<span class="kw-2">*</span>;
 <span class="kw">use </span>sync::UPIntrFreeCell;
 
@@ -128,25 +145,32 @@
         <span class="kw">unsafe </span>{ UPIntrFreeCell::new(<span class="bool-val">false</span>) };
 }
 
+
 <span class="attr">#[no_mangle]
 </span><span class="kw">pub fn </span>rust_main() -&gt; ! {
+    
     clear_bss();
     mm::init();
     UART.init();
-    <span class="macro">println!</span>(<span class="string">"KERN: init gpu"</span>);
+    logging::init();
+    <span class="macro">info!</span>(<span class="string">"--------logging init done----------"</span>);
+    <span class="macro">println!</span>(<span class="string">"[kernel] init gpu"</span>);
     <span class="kw">let </span>_gpu = GPU_DEVICE.clone();
-    <span class="macro">println!</span>(<span class="string">"KERN: init keyboard"</span>);
+    <span class="macro">println!</span>(<span class="string">"[kernel] init keyboard"</span>);
     <span class="kw">let </span>_keyboard = KEYBOARD_DEVICE.clone();
-    <span class="macro">println!</span>(<span class="string">"KERN: init mouse"</span>);
+    <span class="macro">println!</span>(<span class="string">"[kernel] init mouse"</span>);
     <span class="kw">let </span>_mouse = MOUSE_DEVICE.clone();
-    <span class="macro">println!</span>(<span class="string">"KERN: init trap"</span>);
+    <span class="macro">println!</span>(<span class="string">"[kernel] init trap"</span>);
     trap::init();
     trap::enable_timer_interrupt();
     timer::set_next_trigger();
     board::device_init();
+    <span class="macro">println!</span>(<span class="string">"[kernel] init trap"</span>);
+    fs::init();
     fs::list_apps();
     task::add_initproc();
     <span class="kw-2">*</span>DEV_NON_BLOCKING_ACCESS.exclusive_access() = <span class="bool-val">true</span>;
+    <span class="macro">println!</span>(<span class="string">"[kernel] start run tasks"</span>);
     task::run_tasks();
     <span class="macro">panic!</span>(<span class="string">"Unreachable in rust_main!"</span>);
 }

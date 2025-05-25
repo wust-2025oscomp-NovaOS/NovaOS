@@ -167,6 +167,9 @@
 <a href="#167" id="167">167</a>
 <a href="#168" id="168">168</a>
 <a href="#169" id="169">169</a>
+<a href="#170" id="170">170</a>
+<a href="#171" id="171">171</a>
+<a href="#172" id="172">172</a>
 </pre></div><pre class="rust"><code><span class="kw">mod </span>context;
 
 <span class="kw">use </span><span class="kw">crate</span>::config::TRAMPOLINE;
@@ -290,16 +293,19 @@
 
 <span class="attr">#[no_mangle]
 </span><span class="kw">pub fn </span>trap_return() -&gt; ! {
-    disable_supervisor_interrupt();
+    <span class="comment">//println!("[kernel] trap_return");
+    </span>disable_supervisor_interrupt();
     set_user_trap_entry();
     <span class="kw">let </span>trap_cx_user_va = current_trap_cx_user_va();
     <span class="kw">let </span>user_satp = current_user_token();
-    <span class="kw">extern </span><span class="string">"C" </span>{
+    <span class="comment">//println!("[kernel] va: {:#x}, satp: {:#x}", trap_cx_user_va, user_satp);
+    </span><span class="kw">extern </span><span class="string">"C" </span>{
         <span class="kw">fn </span>__alltraps();
         <span class="kw">fn </span>__restore();
     }
     <span class="kw">let </span>restore_va = __restore <span class="kw">as </span>usize - __alltraps <span class="kw">as </span>usize + TRAMPOLINE;
-    <span class="comment">//println!("before return");
+    <span class="comment">//println!("[kernel] restore_va: {:#x}", restore_va);
+    //println!("before return");
     </span><span class="kw">unsafe </span>{
         <span class="macro">asm!</span>(
             <span class="string">"fence.i"</span>,

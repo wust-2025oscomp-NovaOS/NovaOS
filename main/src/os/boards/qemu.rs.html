@@ -59,6 +59,7 @@
 <a href="#59" id="59">59</a>
 <a href="#60" id="60">60</a>
 <a href="#61" id="61">61</a>
+<a href="#62" id="62">62</a>
 </pre></div><pre class="rust"><code><span class="kw">pub const </span>CLOCK_FREQ: usize = <span class="number">12500000</span>;
 <span class="kw">pub const </span>MEMORY_END: usize = <span class="number">0x8800_0000</span>;
 
@@ -84,6 +85,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::drivers::chardev::{CharDevice, UART};
 <span class="kw">use </span><span class="kw">crate</span>::drivers::plic::{IntrTargetPriority, PLIC};
 <span class="kw">use </span><span class="kw">crate</span>::drivers::{KEYBOARD_DEVICE, MOUSE_DEVICE};
+<span class="kw">use </span><span class="kw">crate</span>::println;
 
 <span class="kw">pub fn </span>device_init() {
     <span class="kw">use </span>riscv::register::sie;

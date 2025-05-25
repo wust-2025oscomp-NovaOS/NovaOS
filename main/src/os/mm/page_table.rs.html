@@ -247,6 +247,10 @@
 <a href="#247" id="247">247</a>
 <a href="#248" id="248">248</a>
 <a href="#249" id="249">249</a>
+<a href="#250" id="250">250</a>
+<a href="#251" id="251">251</a>
+<a href="#252" id="252">252</a>
+<a href="#253" id="253">253</a>
 </pre></div><pre class="rust"><code><span class="kw">use super</span>::{frame_alloc, FrameTracker, PhysAddr, PhysPageNum, StepByOne, VirtAddr, VirtPageNum};
 <span class="kw">use </span>alloc::string::String;
 <span class="kw">use </span>alloc::vec;
@@ -302,13 +306,17 @@
 }
 
 <span class="kw">pub struct </span>PageTable {
-    root_ppn: PhysPageNum,
-    frames: Vec&lt;FrameTracker&gt;,
+    <span class="doccomment">/// 根目录页号
+    </span>root_ppn: PhysPageNum,
+    <span class="doccomment">/// 物理页帧数组，RAII思想
+    </span>frames: Vec&lt;FrameTracker&gt;,
 }
 
 <span class="doccomment">/// Assume that it won't oom when creating/mapping.
 </span><span class="kw">impl </span>PageTable {
-    <span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
+
+    <span class="doccomment">/// 新建一个空页表，并分配一个物理页作为页表根目录页
+    </span><span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
         <span class="kw">let </span>frame = frame_alloc().unwrap();
         PageTable {
             root_ppn: frame.ppn,

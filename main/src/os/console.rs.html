@@ -30,6 +30,9 @@
 <a href="#30" id="30">30</a>
 <a href="#31" id="31">31</a>
 <a href="#32" id="32">32</a>
+<a href="#33" id="33">33</a>
+<a href="#34" id="34">34</a>
+<a href="#35" id="35">35</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::drivers::chardev::CharDevice;
 <span class="kw">use </span><span class="kw">crate</span>::drivers::chardev::UART;
 <span class="kw">use </span>core::fmt::{<span class="self">self</span>, Write};
@@ -48,6 +51,9 @@
 <span class="kw">pub fn </span>print(args: fmt::Arguments) {
     Stdout.write_fmt(args).unwrap();
 }
+
+
+
 
 <span class="attr">#[macro_export]
 </span><span class="macro">macro_rules!</span> print {

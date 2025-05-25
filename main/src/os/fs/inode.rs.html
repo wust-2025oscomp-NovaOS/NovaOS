@@ -137,15 +137,23 @@
 <a href="#137" id="137">137</a>
 <a href="#138" id="138">138</a>
 <a href="#139" id="139">139</a>
+<a href="#140" id="140">140</a>
+<a href="#141" id="141">141</a>
+<a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">super</span>::File;
-<span class="kw">use </span><span class="kw">crate</span>::drivers::BLOCK_DEVICE;
 <span class="kw">use </span><span class="kw">crate</span>::mm::UserBuffer;
 <span class="kw">use </span><span class="kw">crate</span>::sync::UPIntrFreeCell;
+<span class="kw">use </span>alloc::borrow::ToOwned;
 <span class="kw">use </span>alloc::sync::Arc;
+<span class="kw">use </span>alloc::string::String;
 <span class="kw">use </span>alloc::vec::Vec;
-<span class="kw">use </span>bitflags::<span class="kw-2">*</span>;
-<span class="kw">use </span>easy_fs::{EasyFileSystem, Inode};
-<span class="kw">use </span>lazy_static::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">super</span>::ROOT_INODE;
+<span class="comment">//use easy_fs::{EasyFileSystem, Inode};
+</span><span class="kw">use </span><span class="kw">super</span>::vfs::Inode;
 
 <span class="kw">pub struct </span>OSInode {
     readable: bool,
@@ -155,15 +163,16 @@
 
 <span class="kw">pub struct </span>OSInodeInner {
     offset: usize,
-    inode: Arc&lt;Inode&gt;,
+    name: String,
+    inode: Arc&lt;<span class="kw">dyn </span>Inode&gt;,
 }
 
 <span class="kw">impl </span>OSInode {
-    <span class="kw">pub fn </span>new(readable: bool, writable: bool, inode: Arc&lt;Inode&gt;) -&gt; <span class="self">Self </span>{
+    <span class="kw">pub fn </span>new(readable: bool, writable: bool, inode: Arc&lt;<span class="kw">dyn </span>Inode&gt;, name: <span class="kw-2">&amp;</span>str) -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{
             readable,
             writable,
-            inner: <span class="kw">unsafe </span>{ UPIntrFreeCell::new(OSInodeInner { offset: <span class="number">0</span>, inode }) },
+            inner: <span class="kw">unsafe </span>{ UPIntrFreeCell::new(OSInodeInner { offset: <span class="number">0</span>, inode, name: name.to_owned() }) },
         }
     }
     <span class="kw">pub fn </span>read_all(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;u8&gt; {
@@ -172,7 +181,8 @@
         <span class="kw">let </span><span class="kw-2">mut </span>v: Vec&lt;u8&gt; = Vec::new();
         <span class="kw">loop </span>{
             <span class="kw">let </span>len = inner.inode.read_at(inner.offset, <span class="kw-2">&amp;mut </span>buffer);
-            <span class="kw">if </span>len == <span class="number">0 </span>{
+            <span class="comment">//println!("read_all: offset = {}, len = {}", inner.offset, len);
+            </span><span class="kw">if </span>len == <span class="number">0 </span>{
                 <span class="kw">break</span>;
             }
             inner.offset += len;
@@ -180,71 +190,75 @@
         }
         v
     }
+
+    <span class="kw">pub fn </span>get_inode(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Arc&lt;<span class="kw">dyn </span>Inode&gt; {
+        <span class="self">self</span>.inner.exclusive_access().inode.clone()
+    }
 }
 
-<span class="macro">lazy_static!</span> {
-    <span class="kw">pub static </span><span class="kw-2">ref </span>ROOT_INODE: Arc&lt;Inode&gt; = {
-        <span class="kw">let </span>efs = EasyFileSystem::open(BLOCK_DEVICE.clone());
-        Arc::new(EasyFileSystem::root_inode(<span class="kw-2">&amp;</span>efs))
-    };
-}
+<span class="comment">// lazy_static! {
+//     pub static ref ROOT_INODE: Arc&lt;dyn Inode&gt; = {
+//         let efs = EasyFileSystem::open(BLOCK_DEVICE.clone());
+//         Arc::new(EasyFileSystem::root_inode(&amp;efs))
+//     };
+// }
 
-<span class="kw">pub fn </span>list_apps() {
+</span><span class="kw">pub fn </span>list_apps() {
     <span class="macro">println!</span>(<span class="string">"/**** APPS ****"</span>);
-    <span class="kw">for </span>app <span class="kw">in </span>ROOT_INODE.ls() {
+    <span class="kw">for </span>app <span class="kw">in </span>ROOT_INODE.get_inode().ls() {
         <span class="macro">println!</span>(<span class="string">"{}"</span>, app);
     }
     <span class="macro">println!</span>(<span class="string">"**************/"</span>)
 }
 
-<span class="macro">bitflags!</span> {
-    <span class="kw">pub struct </span>OpenFlags: u32 {
-        <span class="kw">const </span>RDONLY = <span class="number">0</span>;
-        <span class="kw">const </span>WRONLY = <span class="number">1 </span>&lt;&lt; <span class="number">0</span>;
-        <span class="kw">const </span>RDWR = <span class="number">1 </span>&lt;&lt; <span class="number">1</span>;
-        <span class="kw">const </span>CREATE = <span class="number">1 </span>&lt;&lt; <span class="number">9</span>;
-        <span class="kw">const </span>TRUNC = <span class="number">1 </span>&lt;&lt; <span class="number">10</span>;
-    }
-}
+<span class="comment">// bitflags! {
+//     pub struct OpenFlags: u32 {
+//         const RDONLY = 0;
+//         const WRONLY = 1 &lt;&lt; 0;
+//         const RDWR = 1 &lt;&lt; 1;
+//         const CREATE = 1 &lt;&lt; 9;
+//         const TRUNC = 1 &lt;&lt; 10;
+//     }
+// }
 
-<span class="kw">impl </span>OpenFlags {
-    <span class="doccomment">/// Do not check validity for simplicity
-    /// Return (readable, writable)
-    </span><span class="kw">pub fn </span>read_write(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (bool, bool) {
-        <span class="kw">if </span><span class="self">self</span>.is_empty() {
-            (<span class="bool-val">true</span>, <span class="bool-val">false</span>)
-        } <span class="kw">else if </span><span class="self">self</span>.contains(<span class="self">Self</span>::WRONLY) {
-            (<span class="bool-val">false</span>, <span class="bool-val">true</span>)
-        } <span class="kw">else </span>{
-            (<span class="bool-val">true</span>, <span class="bool-val">true</span>)
-        }
-    }
-}
+// impl OpenFlags {
+//     /// Do not check validity for simplicity
+//     /// Return (readable, writable)
+//     pub fn read_write(&amp;self) -&gt; (bool, bool) {
+//         if self.is_empty() {
+//             (true, false)
+//         } else if self.contains(Self::WRONLY) {
+//             (false, true)
+//         } else {
+//             (true, true)
+//         }
+//     }
+// }
 
-<span class="kw">pub fn </span>open_file(name: <span class="kw-2">&amp;</span>str, flags: OpenFlags) -&gt; <span class="prelude-ty">Option</span>&lt;Arc&lt;OSInode&gt;&gt; {
-    <span class="kw">let </span>(readable, writable) = flags.read_write();
-    <span class="kw">if </span>flags.contains(OpenFlags::CREATE) {
-        <span class="kw">if let </span><span class="prelude-val">Some</span>(inode) = ROOT_INODE.find(name) {
-            <span class="comment">// clear size
-            </span>inode.clear();
-            <span class="prelude-val">Some</span>(Arc::new(OSInode::new(readable, writable, inode)))
-        } <span class="kw">else </span>{
-            <span class="comment">// create file
-            </span>ROOT_INODE
-                .create(name)
-                .map(|inode| Arc::new(OSInode::new(readable, writable, inode)))
-        }
-    } <span class="kw">else </span>{
-        ROOT_INODE.find(name).map(|inode| {
-            <span class="kw">if </span>flags.contains(OpenFlags::TRUNC) {
-                inode.clear();
-            }
-            Arc::new(OSInode::new(readable, writable, inode))
-        })
-    }
-}
+// pub fn open_file(name: &amp;str, flags: OpenFlags) -&gt; Option&lt;Arc&lt;OSInode&gt;&gt; {
+//     let (readable, writable) = flags.read_write();
+//     if flags.contains(OpenFlags::CREATE) {
+//         if let Some(inode) = ROOT_INODE.lookup(name) {
+//             // clear size
+//             inode.clear();
+//             Some(Arc::new(OSInode::new(readable, writable, inode)))
+//         } else {
+//             // create file
+//             ROOT_INODE
+//                 .create(name)
+//                 .map(|inode| Arc::new(OSInode::new(readable, writable, inode)))
+//         }
+//     } else {
+//         ROOT_INODE.lookup(name).map(|inode| {
+//             if flags.contains(OpenFlags::TRUNC) {
+//                 inode.clear();
+//             }
+//             Arc::new(OSInode::new(readable, writable, inode))
+//         })
+//     }
+// }
 
-<span class="kw">impl </span>File <span class="kw">for </span>OSInode {
+</span><span class="kw">impl </span>File <span class="kw">for </span>OSInode {
     <span class="kw">fn </span>readable(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
         <span class="self">self</span>.readable
     }

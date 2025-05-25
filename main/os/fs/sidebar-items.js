@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["inode","pipe","stdio"],"trait":["File"]};
+window.SIDEBAR_ITEMS = {"fn":["init","open_file"],"mod":["ext4","inode","path","pipe","stdio","vfs"],"struct":["FS_MANAGER","ROOT_INODE"],"trait":["File"]};

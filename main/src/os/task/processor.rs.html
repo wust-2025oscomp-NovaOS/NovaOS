@@ -101,6 +101,13 @@
 <a href="#101" id="101">101</a>
 <a href="#102" id="102">102</a>
 <a href="#103" id="103">103</a>
+<a href="#104" id="104">104</a>
+<a href="#105" id="105">105</a>
+<a href="#106" id="106">106</a>
+<a href="#107" id="107">107</a>
+<a href="#108" id="108">108</a>
+<a href="#109" id="109">109</a>
+<a href="#110" id="110">110</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">super</span>::__switch;
 <span class="kw">use super</span>::{fetch_task, TaskStatus};
 <span class="kw">use super</span>::{ProcessControlBlock, TaskContext, TaskControlBlock};
@@ -108,6 +115,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::trap::TrapContext;
 <span class="kw">use </span>alloc::sync::Arc;
 <span class="kw">use </span>lazy_static::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::fs::OSInode;
 
 <span class="kw">pub struct </span>Processor {
     current: <span class="prelude-ty">Option</span>&lt;Arc&lt;TaskControlBlock&gt;&gt;,
@@ -145,10 +153,12 @@
             <span class="comment">// access coming task TCB exclusively
             </span><span class="kw">let </span>next_task_cx_ptr = task.inner.exclusive_session(|task_inner| {
                 task_inner.task_status = TaskStatus::Running;
-                <span class="kw-2">&amp;</span>task_inner.task_cx <span class="kw">as </span><span class="kw-2">*const </span>TaskContext
+                <span class="comment">//task_inner.task_cx.debug();
+                </span><span class="kw-2">&amp;</span>task_inner.task_cx <span class="kw">as </span><span class="kw-2">*const </span>TaskContext
             });
             processor.current = <span class="prelude-val">Some</span>(task);
-            <span class="comment">// release processor manually
+            <span class="comment">//println!("[kernel] switching");
+            // release processor manually
             </span>drop(processor);
             <span class="kw">unsafe </span>{
                 __switch(idle_task_cx_ptr, next_task_cx_ptr);
@@ -169,6 +179,10 @@
 
 <span class="kw">pub fn </span>current_process() -&gt; Arc&lt;ProcessControlBlock&gt; {
     current_task().unwrap().process.upgrade().unwrap()
+}
+
+<span class="kw">pub fn </span>current_work_dir() -&gt; Arc&lt;OSInode&gt; {
+    current_process().inner_exclusive_access().work_dir.clone()
 }
 
 <span class="kw">pub fn </span>current_user_token() -&gt; usize {

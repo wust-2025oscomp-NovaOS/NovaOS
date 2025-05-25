@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["init","print_in_color"],"macro":["with_color"],"struct":["SimpleLogger"]};

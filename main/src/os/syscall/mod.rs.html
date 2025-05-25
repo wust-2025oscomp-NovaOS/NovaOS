@@ -145,7 +145,7 @@
         SYSCALL_CONNECT =&gt; sys_connect(args[<span class="number">0</span>] <span class="kw">as _</span>, args[<span class="number">1</span>] <span class="kw">as _</span>, args[<span class="number">2</span>] <span class="kw">as _</span>),
         SYSCALL_LISTEN =&gt; sys_listen(args[<span class="number">0</span>] <span class="kw">as _</span>),
         SYSCALL_ACCEPT =&gt; sys_accept(args[<span class="number">0</span>] <span class="kw">as _</span>),
-        SYSCALL_OPEN =&gt; sys_open(args[<span class="number">0</span>] <span class="kw">as </span><span class="kw-2">*const </span>u8, args[<span class="number">1</span>] <span class="kw">as </span>u32),
+        SYSCALL_OPEN =&gt; sys_open(args[<span class="number">0</span>] <span class="kw">as </span><span class="kw-2">*const </span>u8, args[<span class="number">1</span>] <span class="kw">as </span>i32),
         SYSCALL_CLOSE =&gt; sys_close(args[<span class="number">0</span>]),
         SYSCALL_PIPE =&gt; sys_pipe(args[<span class="number">0</span>] <span class="kw">as </span><span class="kw-2">*mut </span>usize),
         SYSCALL_READ =&gt; sys_read(args[<span class="number">0</span>], args[<span class="number">1</span>] <span class="kw">as </span><span class="kw-2">*const </span>u8, args[<span class="number">2</span>]),

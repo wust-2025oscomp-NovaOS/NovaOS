@@ -23,6 +23,12 @@
 <a href="#23" id="23">23</a>
 <a href="#24" id="24">24</a>
 <a href="#25" id="25">25</a>
+<a href="#26" id="26">26</a>
+<a href="#27" id="27">27</a>
+<a href="#28" id="28">28</a>
+<a href="#29" id="29">29</a>
+<a href="#30" id="30">30</a>
+<a href="#31" id="31">31</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::trap::trap_return;
 
 <span class="attr">#[repr(C)]
@@ -38,6 +44,12 @@
             ra: <span class="number">0</span>,
             sp: <span class="number">0</span>,
             s: [<span class="number">0</span>; <span class="number">12</span>],
+        }
+    }
+    <span class="kw">pub fn </span>debug(<span class="kw-2">&amp;</span><span class="self">self</span>) {
+        <span class="macro">println!</span>(<span class="string">"sp: {}, ra: {}"</span>, <span class="self">self</span>.ra, <span class="self">self</span>.sp);
+        <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..<span class="number">12 </span>{
+            <span class="macro">println!</span>(<span class="string">"x[i]: {}"</span>, <span class="self">self</span>.s[i]);
         }
     }
     <span class="kw">pub fn </span>goto_trap_return(kstack_ptr: usize) -&gt; <span class="self">Self </span>{

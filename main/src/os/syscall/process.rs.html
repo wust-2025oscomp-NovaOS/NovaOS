@@ -115,11 +115,11 @@
 <a href="#115" id="115">115</a>
 <a href="#116" id="116">116</a>
 <a href="#117" id="117">117</a>
+<a href="#118" id="118">118</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::fs::{open_file, OpenFlags};
 <span class="kw">use </span><span class="kw">crate</span>::mm::{translated_ref, translated_refmut, translated_str};
 <span class="kw">use </span><span class="kw">crate</span>::task::{
-    current_process, current_task, current_user_token, exit_current_and_run_next, pid2process,
-    suspend_current_and_run_next, SignalFlags,
+    current_process, current_task, current_user_token, current_work_dir, exit_current_and_run_next, pid2process, suspend_current_and_run_next, SignalFlags
 };
 <span class="kw">use </span><span class="kw">crate</span>::timer::get_time_ms;
 <span class="kw">use </span>alloc::string::String;
@@ -145,6 +145,7 @@
 }
 
 <span class="kw">pub fn </span>sys_fork() -&gt; isize {
+    <span class="macro">println!</span>(<span class="string">"[kernel] fork"</span>);
     <span class="kw">let </span>current_process = current_process();
     <span class="kw">let </span>new_process = current_process.fork();
     <span class="kw">let </span>new_pid = new_process.getpid();
@@ -172,7 +173,8 @@
             args = args.add(<span class="number">1</span>);
         }
     }
-    <span class="kw">if let </span><span class="prelude-val">Some</span>(app_inode) = open_file(path.as_str(), OpenFlags::RDONLY) {
+    <span class="macro">println!</span>(<span class="string">"[kernel] exec [path]: {:?}, [args]: {:?}"</span>, path, args_vec);
+    <span class="kw">if let </span><span class="prelude-val">Some</span>(app_inode) = open_file(current_work_dir().get_inode(), <span class="kw-2">&amp;</span>path,OpenFlags::O_RDONLY) {
         <span class="kw">let </span>all_data = app_inode.read_all();
         <span class="kw">let </span>process = current_process();
         <span class="kw">let </span>argc = args_vec.len();

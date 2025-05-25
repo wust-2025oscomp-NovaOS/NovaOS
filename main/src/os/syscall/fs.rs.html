@@ -97,9 +97,9 @@
 <a href="#97" id="97">97</a>
 <a href="#98" id="98">98</a>
 <a href="#99" id="99">99</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::fs::{make_pipe, open_file, OpenFlags};
+</pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::fs::{make_pipe, open_file, Dentry, OpenFlags};
 <span class="kw">use </span><span class="kw">crate</span>::mm::{translated_byte_buffer, translated_refmut, translated_str, UserBuffer};
-<span class="kw">use </span><span class="kw">crate</span>::task::{current_process, current_user_token};
+<span class="kw">use </span><span class="kw">crate</span>::task::{current_process, current_user_token, current_work_dir};
 <span class="kw">use </span>alloc::sync::Arc;
 
 <span class="kw">pub fn </span>sys_write(fd: usize, buf: <span class="kw-2">*const </span>u8, len: usize) -&gt; isize {
@@ -142,11 +142,11 @@
     </span>}
 }
 
-<span class="kw">pub fn </span>sys_open(path: <span class="kw-2">*const </span>u8, flags: u32) -&gt; isize {
+<span class="kw">pub fn </span>sys_open(path: <span class="kw-2">*const </span>u8, flags: i32) -&gt; isize {
     <span class="kw">let </span>process = current_process();
     <span class="kw">let </span>token = current_user_token();
     <span class="kw">let </span>path = translated_str(token, path);
-    <span class="kw">if let </span><span class="prelude-val">Some</span>(inode) = open_file(path.as_str(), OpenFlags::from_bits(flags).unwrap()) {
+    <span class="kw">if let </span><span class="prelude-val">Some</span>(inode) = open_file(current_work_dir().get_inode(), <span class="kw-2">&amp;</span>path, OpenFlags::from_bits(flags).unwrap()) {
         <span class="kw">let </span><span class="kw-2">mut </span>inner = process.inner_exclusive_access();
         <span class="kw">let </span>fd = inner.alloc_fd();
         inner.fd_table[fd] = <span class="prelude-val">Some</span>(inode);
